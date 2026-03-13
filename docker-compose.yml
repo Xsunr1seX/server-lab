@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app_net
+
+  producer:
+    build: ./producer
+    ports:
+      - "5000:5000"
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      QUEUE_NAME: image_tasks
+      UPLOAD_DIR: /app/uploads
+      RESULT_DIR: /app/results
+    volumes:
+      - ./uploads:/app/uploads
+      - ./results:/app/results
+    depends_on:
+      - rabbitmq
+    networks:
+      - app_net
+
+  worker:
+    build: ./worker
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      QUEUE_NAME: image_tasks
+      UPLOAD_DIR: /app/uploads
+      RESULT_DIR: /app/results
+    volumes:
+      - ./uploads:/app/uploads
+      - ./results:/app/results
+    depends_on:
+      - rabbitmq
+    networks:
+      - app_net
+
+volumes:
+  rabbitmq_data:
+
+networks:
+  app_net:
+    driver: bridge
