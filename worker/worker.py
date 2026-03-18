@@ -31,7 +31,6 @@ class ImageProcessorWorker:
         }
         
     def connect_rabbitmq(self):
-        """Установка соединения с RabbitMQ"""
         try:
             
             self.connection = pika.BlockingConnection(
@@ -55,7 +54,7 @@ class ImageProcessorWorker:
     def apply_grayscale(self, image):
         return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # Размытие по Гауссу
-    def apply_blur(self, image, kernel_size=(5, 5)):
+    def apply_blur(self, image, kernel_size=(7, 7)):
         return cv2.GaussianBlur(image, kernel_size, 0)
     # Обнаружение границ
     def apply_edge_detection(self, image):
@@ -158,7 +157,6 @@ class ImageProcessorWorker:
     
     
     def start_consuming(self):
-        """Запуск потребителя"""
         try:
             self.connect_rabbitmq()
             
@@ -178,10 +176,6 @@ class ImageProcessorWorker:
             if self.connection and not self.connection.is_closed:
                 self.connection.close()
                 
-
-
-import os
-
 import os
 
 if __name__ == "__main__":
