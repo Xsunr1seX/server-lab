@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Producer - Загрузка изображения</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 500px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        label, select, input { display: block; width: 100%; margin-bottom: 10px; }
+        button { background-color: #4CAF50; color: white; padding: 10px; border: none; cursor: pointer; width: 100%; }
+        #result { margin-top: 20px; padding: 10px; background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Загрузка изображения</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <label>Выберите изображение:</label>
+            <input type="file" name="file" accept="image/*" required>
+
+            <label>Выберите операцию:</label>
+            <select name="operation">
+                <option value="blur">Размытие</option>
+                <option value="invert">Инверсия цветов</option>
+            </select>
+
+            <button type="submit">Отправить</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const response = await fetch('/upload', { method: 'POST', body: formData });
+            const result = await response.json();
+            document.getElementById('result').innerHTML = `
+                <strong>Результат:</strong><br>
+                Статус: ${result.status}<br>
+                Сообщение: ${result.message}<br>
+                ${result.task_id ? 'ID задачи: ' + result.task_id : ''}
+            `;
+        };
+    </script>
+</body>
+</html>
