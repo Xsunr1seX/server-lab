@@ -4,6 +4,7 @@ import os
 import json
 import time
 from pathlib import Path
+import numpy as np
 
 class ImageProcessorWorker:
     def __init__(self, rabbitmq_host='localhost', input_queue='image_tasks', 
@@ -122,32 +123,38 @@ class ImageProcessorWorker:
             return None
     
     def callback(self, ch, method, properties, body):
-
         try:
-            # Парсим сообщение
             message = json.loads(body.decode())
-            image_path = message.get('image_path')
-            filter_name = message.get('filter_name')
-            
-            # Обрабатываем изображение
+
+            task_id = message.get("task_id")
+            filename = message.get("filename")
+            filter_name = message.get("operation", "blur")
+
+            image_path = os.path.join("/app/uploads", filename)
+
+            print(f"Processing {filename}", flush=True)
+
             processed_image = self.process_image(image_path, filter_name)
-            
-            if processed_image is not None:
-                # Сохраняем результат
-                result_path = self.save_result(processed_image, image_path, filter_name)
-                
-            else:
-                raise
-            
-            # Подтверждаем обработку сообщения
+
+            if processed_image is None:
+                raise Exception("Processing failed")
+
+        # сохраняем картинку
+            result_image_path = os.path.join("/app/results", f"{task_id}.jpg")
+            cv2.imwrite(result_image_path, processed_image)
+
+        # сохраняем json
+            result_json_path = os.path.join("/app/results", f"{task_id}.json")
+            with open(result_json_path, "w") as f:
+                json.dump({"status": "done"}, f)
+
+            print(f"Done {task_id}", flush=True)
+
             ch.basic_ack(delivery_tag=method.delivery_tag)
-            
-        except json.JSONDecodeError as e:
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-            raise e
+
         except Exception as e:
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
-            raise e
+            print(f"ERROR: {e}", flush=True)
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
     
     
     def start_consuming(self):
@@ -173,21 +180,24 @@ class ImageProcessorWorker:
                 
 
 
-if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Image Processing Worker')
-    parser.add_argument('--host', default='localhost', help='RabbitMQ host')
-    parser.add_argument('--queue', default='image_tasks', help='Input queue name')
-    parser.add_argument('--output', default='processed_images', help='Output directory')
-    
-    args = parser.parse_args()
-    # Создаем и запускаем воркер
-    worker = ImageProcessorWorker(
-        rabbitmq_host=args.host,
-        input_queue=args.queue,
-        output_dir=args.output
-    )
-    
-    worker.start_consuming()
+import os
 
+import os
+
+if __name__ == "__main__":
+    host = os.getenv("RABBITMQ_HOST", "rabbitmq")
+    queue = os.getenv("QUEUE_NAME", "image_tasks")
+    out = os.getenv("RESULT_DIR", "/app/results")
+
+    print(f"HOST={host}", flush=True)
+    print(f"QUEUE={queue}", flush=True)
+    print(f"RESULT_DIR={out}", flush=True)
+
+    worker = ImageProcessorWorker(
+        rabbitmq_host=host,
+        input_queue=queue,
+        output_dir=out
+    )
+
+    print("Worker started", flush=True)
+    worker.start_consuming()
