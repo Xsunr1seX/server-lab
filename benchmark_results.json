@@ -1,0 +1,23 @@
+[
+  {
+    "workers": 1,
+    "success": 20,
+    "total": 20,
+    "time": 0.64,
+    "speed": 31.41
+  },
+  {
+    "workers": 2,
+    "success": 20,
+    "total": 20,
+    "time": 0.68,
+    "speed": 29.21
+  },
+  {
+    "workers": 4,
+    "success": 20,
+    "total": 20,
+    "time": 0.55,
+    "speed": 36.52
+  }
+]
